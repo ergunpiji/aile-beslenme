@@ -117,6 +117,30 @@
   .switch{text-align:center;font-size:.85rem;color:var(--muted);margin-top:14px;}
   .switch a{color:var(--green);font-weight:600;cursor:pointer;}
   .config-warn{background:#fff3e6;border:1.5px solid #e8c79a;border-radius:16px;padding:16px;font-size:.85rem;color:#8a5a1f;margin-top:24px;line-height:1.5;}
+  .bottomnav{position:fixed;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;background:var(--card);border-top:1.5px solid var(--line);display:flex;z-index:40;padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
+  .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:'DM Sans';font-weight:700;font-size:.7rem;}
+  .navbtn .ic{font-size:1.3rem;}
+  .navbtn.on{color:var(--green);}
+  #appScreen{padding-bottom:86px;}
+  .shop-head{background:linear-gradient(150deg,var(--green-deep),var(--green));border-radius:24px;padding:22px;color:#fff;margin-bottom:6px;}
+  .shop-head .eyebrow2{font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;opacity:.8;font-weight:700;}
+  .shop-title{font-family:'Fraunces',serif;font-weight:900;font-size:1.7rem;margin-top:6px;}
+  .shop-sub{font-size:.82rem;opacity:.9;margin-top:8px;}
+  .ssec{margin-top:22px;}
+  .ssec-head{display:flex;align-items:center;gap:10px;margin:0 4px 8px;}
+  .ssec-head .st{font-family:'Fraunces',serif;font-weight:900;font-size:1.25rem;color:var(--green-deep);}
+  .sbadge{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 9px;border-radius:8px;background:#f6ead0;color:#b97e1f;border:1px solid #e8d4a8;}
+  .snote{font-size:.76rem;color:var(--muted);margin:0 4px 10px;}
+  .scat{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin:16px 4px 8px;}
+  .sgroup{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:4px 14px;margin-bottom:10px;}
+  .sgroup.now{border-color:#e8d4a8;background:#fffaf0;}
+  .sitem{display:flex;align-items:center;gap:13px;padding:12px 2px;border-bottom:1px dashed var(--line);cursor:pointer;}
+  .sitem:last-child{border-bottom:none;}
+  .sbox{width:24px;height:24px;border-radius:8px;border:2.2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;}
+  .sitem .snm{flex:1;font-size:.92rem;font-weight:500;}
+  .sitem .sqt{font-size:.76rem;color:var(--muted);font-weight:600;}
+  .sitem.done .sbox{background:var(--check);border-color:var(--check);}
+  .sitem.done .snm{color:var(--muted);text-decoration:line-through;}
 </style>
 </head>
 <body>
@@ -171,6 +195,7 @@
   <!-- ANA UYGULAMA -->
   <div id="appScreen" class="hidden">
     <div class="topbar"><div class="who" id="who"></div><button class="link" id="logout">Çıkış</button></div>
+    <div id="viewPlan">
     <div class="hero">
       <div class="eyebrow">Günlük Beslenme</div>
       <h1>Bugünü Tamamla</h1>
@@ -188,6 +213,18 @@
       <div class="btns"><button class="btn" id="resetDay">Günü Sıfırla</button><button class="btn warn" id="resetWeek">Haftayı Sıfırla</button></div>
       <p class="tip">Soldaki 📖 ikonu tarif açar · "⇄ Değiştir" yemeği değiştirir · karta dokunmak "yedim" işaretler. Verilerin bulutta, her cihazdan erişilebilir.</p>
     </div>
+    </div>
+    <div id="viewShop" class="hidden">
+      <div class="shop-head"><div class="eyebrow2">Haftalık Plan</div><h1 class="shop-title">Alışveriş Listesi</h1><p class="shop-sub">Önce bugün–yarın için tazeler, sonra kategorilere göre haftalık liste. Aldıklarını dokunarak işaretle.</p></div>
+      <div class="ssec"><div class="ssec-head"><span class="st">Bugün–Yarın</span><span class="sbadge">Cmt–Paz · taze</span></div><div class="snote">Hemen lazım olan, bekletilmemesi gereken tazeler.</div><div class="sgroup now" id="shopUrgent"></div></div>
+      <div class="ssec"><div class="ssec-head"><span class="st">Haftalık Alışveriş</span></div><div class="snote">Saklanabilen ve haftanın geri kalanı için toplu alınabilecekler.</div><div id="shopWeekly"></div></div>
+      <div class="btns" style="margin-top:18px"><button class="btn warn" id="shopReset">Listeyi Sıfırla</button></div>
+      <p class="tip">Alışveriş işaretlerin bu cihazda saklanır.</p>
+    </div>
+    <nav class="bottomnav">
+      <button class="navbtn on" data-view="plan"><span class="ic">📋</span>Plan</button>
+      <button class="navbtn" data-view="shop"><span class="ic">🛒</span>Alışveriş</button>
+    </nav>
   </div>
 </div>
 
@@ -379,8 +416,35 @@ function celebrate(){cv.width=innerWidth;cv.height=innerHeight;const colors=['#2
 
 function showApp(){
   $('who').innerHTML=(profile.name||'Profil')+' <span>· '+profile.kcal+' kcal hedef</span>';
-  show('appScreen');render();
+  show('appScreen');render();loadShop();renderShop();
 }
+
+/* ---------- ALIŞVERİŞ ---------- */
+const URGENT=[
+  ["Yumurta","1 koli"],["Tavuk göğsü","~600 g"],["Dana kıyma","~150 g"],["Yağsız / Greek yoğurt","~800 g"],
+  ["Lor peyniri","~150 g"],["Salatalık","3-4 adet"],["Domates","4-5 adet"],["Marul / yeşillik","1 demet"],
+  ["Yaban mersini","1 kutu"],["Elma","3-4 adet"],["Tam buğday ekmek","1 adet"],["Çavdar ekmeği","1 adet"],
+  ["Mısır (konserve)","1 küçük"],["Nohut (konserve)","1 kutu"]
+];
+const WEEKLY={
+  "Et · Tavuk · Balık":[["Tavuk göğsü (haftalık)","~1,5 kg"],["Dana kıyma / köfte","~500 g"],["Hindi göğsü / şiş","~400 g"],["Somon fileto","~300 g"],["Levrek / çupra","2-3 adet"],["Ton balığı konservesi","2-3 adet"],["Karides (dondurulmuş)","1 paket"]],
+  "Süt Ürünleri":[["Yumurta","1-2 koli"],["Light süt","1 L"],["Light süzme peynir","1 kutu"],["Beyaz peynir","250 g"],["Kaşar peyniri","150 g"],["Cottage cheese","1 kutu"],["Kefir","1 şişe"]],
+  "Tahıl · Baklagil · Ekmek":[["Bulgur","1 paket"],["Pirinç","1 paket"],["Esmer pirinç","1 paket"],["Kinoa","1 paket"],["Tam buğday makarna","1 paket"],["Yulaf","1 paket"],["Kuru fasulye / nohut","1'er paket"],["Lavaş","1 paket"],["Granola","1 paket"]],
+  "Sebze · Meyve":[["Soğan","1 kg"],["Sarımsak","1 baş"],["Patates","1 kg"],["Biber","5-6 adet"],["Brokoli","1 adet"],["Havuç","4-5 adet"],["Mantar","250 g"],["Ispanak","1 demet"],["Patlıcan","2-3 adet"],["Limon","3-4 adet"],["Avokado","2 adet"],["Muz","1 hevenk"],["Armut","3-4 adet"],["Portakal","4-5 adet"]],
+  "Kuruyemiş · Market":[["Badem","1 paket"],["Ceviz","1 paket"],["Fıstık ezmesi","1 kavanoz"],["Zeytin","1 kutu"],["Zeytinyağı","1 şişe"],["Bal","1 kavanoz"],["Whey protein","1 kutu"],["Protein bar","1 kutu"],["Nar ekşisi","1 şişe"],["Tarçın","1 paket"],["Baharat (kekik, karabiber, tuz)","ihtiyaç kadar"]]
+};
+const SHOP_KEY="diyetShop_v1";
+let shopDone={};
+function loadShop(){try{const r=localStorage.getItem(SHOP_KEY);if(r)shopDone=JSON.parse(r);}catch(e){shopDone={};}}
+function saveShop(){try{localStorage.setItem(SHOP_KEY,JSON.stringify(shopDone));}catch(e){}}
+function shopItem(id,name,qty){const d=document.createElement('div');d.className='sitem'+(shopDone[id]?' done':'');d.innerHTML='<div class="sbox">'+(shopDone[id]?'✓':'')+'</div><div class="snm">'+name+'</div><div class="sqt">'+qty+'</div>';d.onclick=()=>{shopDone[id]=!shopDone[id];saveShop();renderShop();};return d;}
+function renderShop(){
+  const u=$('shopUrgent');u.innerHTML='';URGENT.forEach((it,i)=>u.appendChild(shopItem('u'+i,it[0],it[1])));
+  const w=$('shopWeekly');w.innerHTML='';
+  Object.keys(WEEKLY).forEach((cat,ci)=>{const h=document.createElement('div');h.className='scat';h.textContent=cat;w.appendChild(h);const g=document.createElement('div');g.className='sgroup';WEEKLY[cat].forEach((it,i)=>g.appendChild(shopItem('w'+ci+'_'+i,it[0],it[1])));w.appendChild(g);});
+}
+document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>{const v=b.dataset.view;document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('on',x===b));$('viewPlan').classList.toggle('hidden',v!=='plan');$('viewShop').classList.toggle('hidden',v!=='shop');window.scrollTo(0,0);});
+const _sr=$('shopReset');if(_sr)_sr.onclick=()=>{if(confirm("Tüm alışveriş işaretleri sıfırlansın mı?")){shopDone={};saveShop();renderShop();}};
 
 /* ---------- BOOT ---------- */
 async function boot(){
