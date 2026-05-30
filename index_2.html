@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Aile Beslenme Takibi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#f4efe4;--card:#fffdf8;--ink:#272c20;--muted:#7a8070;--green:#2f7d4f;--green-soft:#e4f0e6;--green-deep:#1f5e3a;--line:#e7dfcd;--protein:#b5532f;--carb:#c08a2d;--fat:#6e8259;--check:#2e9e5b;--gold:#cf9a3e;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:radial-gradient(circle at 50% -8%, rgba(47,125,79,.14), transparent 45%),var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;line-height:1.45;padding:18px 14px 48px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .app{max-width:440px;margin:0 auto;}
+  .hidden{display:none!important;}
+  .hero{background:linear-gradient(150deg,var(--green-deep),var(--green));border-radius:24px;padding:22px;color:#fff;position:relative;overflow:hidden;box-shadow:0 18px 40px -20px rgba(31,94,58,.7);}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.07);}
+  .hero .eyebrow{font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;opacity:.8;font-weight:700;}
+  .hero h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.7rem;line-height:1.05;margin-top:6px;}
+  .hero-row{display:flex;align-items:center;gap:18px;margin-top:16px;}
+  .ring-wrap{position:relative;width:84px;height:84px;flex-shrink:0;}
+  .ring-wrap svg{transform:rotate(-90deg);}
+  .ring-bg{fill:none;stroke:rgba(255,255,255,.22);stroke-width:9;}
+  .ring-fg{fill:none;stroke:#fff;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .6s;}
+  .ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring-label .pct{font-family:'Fraunces',serif;font-weight:900;font-size:1.35rem;line-height:1;}
+  .ring-label .sub{font-size:.6rem;opacity:.85;}
+  .hero-msg{flex:1;}
+  .hero-msg .big{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;}
+  .hero-msg .small{font-size:.8rem;opacity:.9;margin-top:3px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .who{font-size:.85rem;font-weight:700;color:var(--green-deep);}
+  .who span{color:var(--muted);font-weight:500;}
+  .link{font-size:.78rem;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;}
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding:18px 2px 10px;scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:0 0 auto;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:9px 13px;text-align:center;cursor:pointer;min-width:58px;}
+  .tab .d{font-weight:700;font-size:.82rem;}
+  .tab .frac{font-size:.62rem;color:var(--muted);margin-top:2px;font-weight:600;}
+  .tab.today{border-color:var(--gold);}
+  .tab.today .d::after{content:" •";color:var(--gold);}
+  .tab.active{background:var(--green);border-color:var(--green);}
+  .tab.active .d,.tab.active .frac{color:#fff;}
+  .tab.full{background:var(--green-soft);border-color:#bcdcc4;}
+  .tab.active.full{background:var(--green);}
+  .day-bar{display:flex;align-items:baseline;justify-content:space-between;margin:8px 4px 12px;}
+  .day-bar h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.5rem;color:var(--green-deep);}
+  .day-bar .count{font-size:.8rem;color:var(--muted);font-weight:600;}
+  .meal{display:flex;align-items:center;gap:14px;background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:14px;margin-bottom:11px;cursor:pointer;transition:transform .12s,background .2s;box-shadow:0 8px 22px -18px rgba(39,44,32,.5);}
+  .meal:active{transform:scale(.985);}
+  .icon{position:relative;width:50px;height:50px;border-radius:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.65rem;background:var(--green-soft);cursor:pointer;}
+  .icon:active{transform:scale(.92);}
+  .icon .rb{position:absolute;right:-5px;bottom:-5px;width:21px;height:21px;border-radius:50%;background:#fff;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:.66rem;}
+  .meal-body{flex:1;min-width:0;}
+  .meal-head{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;}
+  .meal-slot{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--green);}
+  .meal-time{font-size:.66rem;color:var(--muted);}
+  .meal-food{font-size:.9rem;font-weight:500;line-height:1.3;}
+  .row2{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap;}
+  .macros{display:flex;gap:5px;flex-wrap:wrap;}
+  .m{font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:6px;}
+  .m.k{background:rgba(47,125,79,.12);color:var(--green-deep);}
+  .m.p{background:rgba(181,83,47,.12);color:var(--protein);}
+  .m.c{background:rgba(192,138,45,.14);color:var(--carb);}
+  .m.f{background:rgba(110,130,89,.16);color:var(--fat);}
+  .swap{font-size:.66rem;font-weight:700;color:var(--muted);background:transparent;border:1.4px solid var(--line);border-radius:8px;padding:3px 9px;cursor:pointer;}
+  .check{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;}
+  .meal.done{background:var(--green-soft);border-color:#aed5b8;}
+  .meal.done .icon{background:#fff;}
+  .meal.done .check{background:var(--check);border-color:var(--check);}
+  .meal.done .meal-food{color:var(--muted);text-decoration:line-through;}
+  .foot{margin-top:18px;text-align:center;}
+  .bar{height:9px;border-radius:99px;background:var(--line);overflow:hidden;margin:0 4px 14px;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--check));border-radius:99px;transition:width .5s;width:0;}
+  .day-total{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;}
+  .day-total .lab{font-family:'Fraunces',serif;font-weight:600;color:var(--green-deep);font-size:.95rem;}
+  .btns{display:flex;gap:10px;}
+  .btn{flex:1;padding:11px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--muted);font-family:'DM Sans';font-weight:600;font-size:.82rem;cursor:pointer;}
+  .btn.warn{color:#a8503a;}
+  .btn.primary{background:var(--green);color:#fff;border-color:var(--green);}
+  .tip{font-size:.74rem;color:var(--muted);margin-top:16px;line-height:1.5;padding:0 8px;}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:50;}
+  .overlay{position:fixed;inset:0;background:rgba(30,40,28,.5);opacity:0;pointer-events:none;transition:.25s;z-index:60;}
+  .overlay.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-radius:26px 26px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));max-width:440px;margin:0 auto;transform:translateY(110%);transition:transform .3s;z-index:61;max-height:85vh;overflow-y:auto;}
+  .sheet.show{transform:translateY(0);}
+  .grab{width:42px;height:5px;border-radius:99px;background:var(--line);margin:6px auto 14px;}
+  .sheet h3{font-family:'Fraunces',serif;font-weight:900;font-size:1.25rem;color:var(--green-deep);margin-bottom:2px;}
+  .sheet .sh-sub{font-size:.76rem;color:var(--muted);margin-bottom:14px;}
+  .opt{display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px;margin-bottom:9px;cursor:pointer;}
+  .opt .oi{width:42px;height:42px;border-radius:12px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+  .opt .of{flex:1;font-size:.86rem;font-weight:500;}
+  .opt .ock{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;}
+  .opt.sel{border-color:var(--green);background:var(--green-soft);}
+  .opt.sel .ock{background:var(--green);border-color:var(--green);position:relative;}
+  .opt.sel .ock::after{content:"✓";color:#fff;font-size:.7rem;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .r-head{display:flex;gap:13px;align-items:center;margin-bottom:4px;}
+  .r-emoji{width:54px;height:54px;border-radius:15px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:1.9rem;}
+  .r-sec{font-family:'Fraunces',serif;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;margin:18px 0 8px;}
+  .r-ing{font-size:.88rem;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .r-steps{margin:0;padding-left:22px;}
+  .r-steps li{font-size:.9rem;margin-bottom:10px;}
+  .r-macros{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
+  .form-card{background:var(--card);border:1.5px solid var(--line);border-radius:22px;padding:24px 20px;margin-top:24px;}
+  .form-card h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.5rem;color:var(--green-deep);margin-bottom:4px;}
+  .form-card p.lead{font-size:.85rem;color:var(--muted);margin-bottom:18px;}
+  label.fl{display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 2px 5px;}
+  input.fi,select.fs{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:13px;font-family:'DM Sans';font-size:.95rem;background:#fff;color:var(--ink);}
+  .seg{display:flex;gap:8px;}
+  .seg button{flex:1;padding:11px;border:1.5px solid var(--line);border-radius:13px;background:#fff;font-family:'DM Sans';font-weight:600;font-size:.85rem;cursor:pointer;color:var(--muted);}
+  .seg button.on{background:var(--green);color:#fff;border-color:var(--green);}
+  .msg{font-size:.82rem;margin-top:12px;text-align:center;min-height:18px;}
+  .msg.err{color:#a8503a;}
+  .msg.ok{color:var(--green);}
+  .bigbtn{width:100%;padding:14px;border-radius:14px;border:none;background:var(--green);color:#fff;font-family:'DM Sans';font-weight:700;font-size:1rem;cursor:pointer;margin-top:18px;}
+  .switch{text-align:center;font-size:.85rem;color:var(--muted);margin-top:14px;}
+  .switch a{color:var(--green);font-weight:600;cursor:pointer;}
+  .config-warn{background:#fff3e6;border:1.5px solid #e8c79a;border-radius:16px;padding:16px;font-size:.85rem;color:#8a5a1f;margin-top:24px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- CONFIG UYARISI -->
+  <div id="configWarn" class="config-warn hidden">
+    ⚙️ Kurulum gerekiyor: <code>index.html</code> içindeki <b>SUPABASE_URL</b> ve <b>SUPABASE_ANON_KEY</b> değerlerini kendi Supabase projenden alıp doldur. Adımlar Claude sohbetinde.
+  </div>
+
+  <!-- GİRİŞ EKRANI -->
+  <div id="authScreen" class="hidden">
+    <div class="hero"><div class="eyebrow">Aile Beslenme Takibi</div><h1 id="authTitle">Giriş Yap</h1></div>
+    <div class="form-card">
+      <h2 id="authH">Tekrar hoş geldin</h2>
+      <p class="lead" id="authLead">Hesabınla giriş yap, takibin bulutta seni bekliyor.</p>
+      <div id="nameWrap" class="hidden"><label class="fl">Ad</label><input class="fi" id="authName" placeholder="Adın"></div>
+      <label class="fl">E-posta</label><input class="fi" id="authEmail" type="email" placeholder="ornek@mail.com">
+      <label class="fl">Şifre</label><input class="fi" id="authPass" type="password" placeholder="••••••••">
+      <button class="bigbtn" id="authBtn">Giriş Yap</button>
+      <div class="msg" id="authMsg"></div>
+      <div class="switch" id="authSwitch">Hesabın yok mu? <a id="toSignup">Kayıt ol</a></div>
+    </div>
+  </div>
+
+  <!-- PROFİL OLUŞTURMA -->
+  <div id="onboardScreen" class="hidden">
+    <div class="hero"><div class="eyebrow">Profil</div><h1>Hedefini Belirleyelim</h1></div>
+    <div class="form-card">
+      <h2>Bilgilerin</h2>
+      <p class="lead">Kalori ve makro hedeflerini Mifflin-St Jeor formülüyle hesaplayacağız.</p>
+      <label class="fl">Ad</label><input class="fi" id="obName" placeholder="Adın">
+      <label class="fl">Cinsiyet</label>
+      <div class="seg" id="obSex"><button data-v="erkek">Erkek</button><button data-v="kadin">Kadın</button></div>
+      <label class="fl">Yaş</label><input class="fi" id="obAge" type="number" inputmode="numeric" placeholder="49">
+      <label class="fl">Boy (cm)</label><input class="fi" id="obHeight" type="number" inputmode="numeric" placeholder="174">
+      <label class="fl">Kilo (kg)</label><input class="fi" id="obWeight" type="number" inputmode="decimal" placeholder="88">
+      <label class="fl">Aktivite</label>
+      <select class="fs" id="obActivity">
+        <option value="hareketsiz">Hareketsiz (masa başı)</option>
+        <option value="hafif" selected>Hafif aktif (haftada 1-3 gün)</option>
+        <option value="orta">Orta aktif (haftada 3-5 gün)</option>
+        <option value="cok">Çok aktif (haftada 6-7 gün)</option>
+      </select>
+      <label class="fl">Hedef</label>
+      <div class="seg" id="obGoal"><button data-v="ver">Kilo ver</button><button data-v="koru">Koru</button><button data-v="al">Kilo al</button></div>
+      <button class="bigbtn" id="obBtn">Hesapla ve Başla</button>
+      <div class="msg" id="obMsg"></div>
+    </div>
+  </div>
+
+  <!-- ANA UYGULAMA -->
+  <div id="appScreen" class="hidden">
+    <div class="topbar"><div class="who" id="who"></div><button class="link" id="logout">Çıkış</button></div>
+    <div class="hero">
+      <div class="eyebrow">Günlük Beslenme</div>
+      <h1>Bugünü Tamamla</h1>
+      <div class="hero-row">
+        <div class="ring-wrap"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="ring-bg" cx="42" cy="42" r="36"></circle><circle class="ring-fg" id="ring" cx="42" cy="42" r="36" stroke-dasharray="226" stroke-dashoffset="226"></circle></svg><div class="ring-label"><span class="pct" id="ringPct">0%</span><span class="sub" id="ringFrac">0/4</span></div></div>
+        <div class="hero-msg"><div class="big" id="msgBig">Hadi başlayalım 💪</div><div class="small" id="msgSmall">Her işaret, hedefe bir adım.</div></div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="day-bar"><h2 id="dayName">—</h2><span class="count" id="dayCount"></span></div>
+    <div id="meals"></div>
+    <div class="foot">
+      <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+      <div class="day-total"><span class="lab">Günlük Hedef</span><div class="macros" id="dayTarget"></div></div>
+      <div class="btns"><button class="btn" id="resetDay">Günü Sıfırla</button><button class="btn warn" id="resetWeek">Haftayı Sıfırla</button></div>
+      <p class="tip">Soldaki 📖 ikonu tarif açar · "⇄ Değiştir" yemeği değiştirir · karta dokunmak "yedim" işaretler. Verilerin bulutta, her cihazdan erişilebilir.</p>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><h3 id="shTitle"></h3><div class="sh-sub" id="shSub"></div><div id="shOpts"></div></div>
+<div class="sheet" id="rsheet"><div class="grab"></div><div class="r-head"><div class="r-emoji" id="rEmoji">🍽</div><div><h3 id="rTitle"></h3><div class="r-macros" id="rMacro"></div></div></div><div class="r-sec">Malzemeler</div><div class="r-ing" id="rIng"></div><div class="r-sec">Hazırlanışı</div><ol class="r-steps" id="rSteps"></ol></div>
+<canvas class="confetti" id="confetti"></canvas>
+
+<script>
+/* ====== SUPABASE AYARLARI — kendi projenin değerlerini buraya yapıştır ====== */
+const SUPABASE_URL="https://wplanurfmdzlcljhnjsg.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_PkCc96R21RKw4k47bCRSdg_M02aRjv2";
+/* =========================================================================== */
+
+const DAY_NAMES=["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+const SLOTS=["Kahvaltı","Öğle","Ara Öğün","Akşam"];
+const TIMES=["09:00","12:30","15:30","18:30"];
+const REF={kcal:[460,540,415,460],p:[33,55,25,49],c:[28,46,60,37],f:[22,13,11,14]};
+const REF_TOT={kcal:1875,p:162,c:171,f:60};
+
+const ALT=[
+[["🍳","3 yumurtalı omlet · 2 dilim tam buğday ekmek · 50 g light beyaz peynir · domates-salatalık"],["🍳","3 yumurtalı menemen · 1 dilim tam buğday ekmek · 40 g kaşar"],["🧀","200 g light süzme peynir · 2 dilim ekmek · 1 haşlanmış yumurta · zeytin · sebze"],["🥣","Yulaf lapası: 40 g yulaf + 25 g whey + 200 ml light süt + 15 g fıstık ezmesi"],["🍳","100 g hindi füme · 2 yumurta · 1 dilim ekmek · 30 g beyaz peynir · sebze"],["🍳","4 yumurta beyazı + 1 tam yumurta · 50 g lor · 2 dilim çavdar ekmeği · 2 ceviz"],["🥣","150 g tam yağlı yoğurt + 30 g yulaf + 1 yumurta + 20 g ceviz + tarçın"],["🍳","Sebzeli omlet (3 yumurta + ıspanak-mantar) · 1 dilim çavdar ekmeği · 30 g beyaz peynir"],["🥚","2 haşlanmış yumurta · 100 g lor · 2 dilim tam buğday ekmek · domates · 5 zeytin"],["🥞","Yulaf pankek (40 g yulaf + 2 yumurta + 1 ölçek whey) · 1 yk fıstık ezmesi"],["🧀","Peynir tabağı: 60 g beyaz peynir + 30 g kaşar · 2 dilim tam buğday ekmek · domates · zeytin"],["🌭","Sucuklu yumurta (2 yumurta + 30 g light sucuk) · 1 dilim ekmek · sebze"],["🥑","Avokadolu tost: 1 dilim ekmek · ½ avokado · 2 haşlanmış yumurta · light peynir"],["🌯","Tavuklu dürüm: tam buğday lavaş · 80 g ızgara tavuk · light labne · marul-domates"],["🥣","Cottage cheese kâse: 200 g cottage cheese · 30 g yulaf · 15 g ceviz · tarçın"]],
+[["🍗","150 g ızgara tavuk göğsü · 1 kase bulgur pilavı · bol salata + zeytinyağı"],["🥩","150 g ızgara köfte · 130 g esmer pirinç · cacık · salata"],["🦃","180 g ızgara hindi · 150 g fırın patates · yeşil salata"],["🍝","150 g suda ton balığı · 100 g tam buğday makarna · bol sebze + zeytinyağı"],["🐟","150 g ızgara somon · 120 g kinoa · buharda brokoli & havuç"],["🍲","Etli nohut (1,5 kepçe) + 100 g ızgara tavuk · 5 yk pirinç · cacık"],["🍗","Tavuklu bowl: 160 g ızgara tavuk · 130 g esmer pirinç · bol sebze"],["🐟","180 g ızgara levrek · 1 orta patates haşlama · yeşil salata"],["🥩","Izgara biftek yağsız (130 g) · 100 g bulgur · közlenmiş sebze"],["🍗","Fırın tavuk but derisiz (180 g) · 4 yk bulgur · salata"],["🦃","Hindi köfte (160 g) · 130 g pirinç · cacık · salata"],["🐟","Izgara çupra (180 g) · 100 g kinoa · sebze"],["🫘","Etli kuru fasulye (1 kepçe) + 100 g ızgara tavuk · 4 yk pirinç · turşu"],["🍝","Tavuklu tam buğday makarna (130 g tavuk + 90 g makarna) · domates sos · sebze"],["🌯","Tavuklu dürüm: tam buğday lavaş · 150 g tavuk · marul-domates · cacık"],["🥗","Izgara tavuk salata: 180 g tavuk · bol yeşillik · 4 yk bulgur · nar ekşisi"],["🍤","Izgara karides (180 g) · 100 g pirinç · sebze sote"],["🥩","Dana rosto (140 g) · fırın patates (120 g) · salata"],["🐟","Fırın somon (150 g) · 4 yk bulgur · buharda brokoli"],["🍢","Tavuk şiş (180 g) · ½ lavaş · közlenmiş biber-domates · cacık"],["🍲","Izgara köfte (150 g) · 1 kase mercimek çorbası · ½ ekmek · salata"],["🍳","Sebzeli tavuk sote (170 g tavuk) · 4 yk bulgur · yoğurt"],["🦃","Hindi şinitzel fırın (160 g) · haşlanmış patates (120 g) · salata"],["🥗","Ton balıklı kinoa salata: 150 g ton · 120 g kinoa · sebze · zeytinyağı"],["🥩","Izgara antrikot yağsız (130 g) · 100 g esmer pirinç · ızgara sebze"]],
+[["🥣","Yoğurt kâsesi: 200 g yağsız Greek yoğurt · 1 muz · 20 g badem"],["🧀","Süzme peynir kâsesi: 200 g light süzme peynir · 1 elma · 20 g ceviz"],["🥪","Tam buğday tost: 2 dilim ekmek · 20 g fıstık ezmesi · ½ muz + 1 bardak süt"],["🥣","Overnight oats: 200 g Greek yoğurt · 30 g yulaf · 1 muz · tarçın"],["🥤","Protein smoothie: 1 ölçek whey · 250 ml süt · 1 muz · 1 yk fıstık ezmesi"],["🍫","Protein bar (~220 kcal) · 1 elma · 10 adet badem"],["🍓","Meyveli yoğurt: 200 g Greek yoğurt · 40 g granola · yaban mersini"],["🥛","Muzlu yoğurt smoothie: 200 g yağsız yoğurt · 200 ml light süt · 1 muz · 20 g yulaf"],["🥯","Yarım simit · 100 g light süzme peynir · 1 portakal"],["🍎","200 g yağsız Greek yoğurt · 1 elma · 1 yk fıstık ezmesi · tarçın"],["🧀","Cottage cheese kâse: 200 g cottage cheese · 1 muz · 1 tk bal"],["🥛","Kefirli granola: 250 ml kefir · 30 g granola · yaban mersini"],["🍞","2 dilim tam buğday ekmek · 60 g light beyaz peynir · 1 elma"],["🥣","Sütlü yulaf: 40 g yulaf · 250 ml light süt · ½ muz · tarçın · 1 tk bal"],["🍐","Meyve & yoğurt: 150 g Greek yoğurt · 1 armut · 20 g badem · tarçın"]],
+[["🥩","150 g ızgara köfte · 150 g fırın patates · 100 g yoğurt"],["🐟","150 g ızgara levrek · fırın sebze · 100 g yoğurt · yeşil salata"],["🍗","180 g fırın tavuk · sebze sote · 4 yk bulgur"],["🍢","180 g hindi şiş · közlenmiş sebze · 5 yk bulgur"],["🍲","Sebzeli tavuk sote (150 g) · 1 kase mercimek çorbası · 1 dilim ekmek"],["🍚","Kıymalı sebze yemeği (150 g kıyma) · 4 yk pirinç · cacık"],["🥗","Izgara tavuk salata (150 g tavuk · yeşillik · 1 yumurta · mısır) · 1 dilim ekmek"],["🐟","Fırın somon (140 g) · buharda sebze · 3 yk bulgur · salata"],["🍗","Izgara tavuk göğsü (170 g) · ızgara sebze · 100 g yoğurt"],["🍆","Izgara köfte (150 g) · közlenmiş patlıcan-biber · cacık"],["🍲","Etli sebze güveç (150 g et) · 3 yk pirinç · salata"],["🐟","Izgara çupra (160 g) · yeşil salata · 1 dilim ekmek"],["🦃","Hindi sote (170 g) · sebzeli · 4 yk bulgur · yoğurt"],["🍗","Tavuklu sebze fırın (170 g tavuk + karışık sebze) · 3 yk pirinç"],["🥘","Tas kebabı (150 g et) · 1 dilim ekmek · cacık"],["🍤","Izgara karides (160 g) · sebze sote · yeşil salata"],["🍲","Mercimek çorbası (1 kase) · 150 g ızgara tavuk · salata"],["🍳","Sebzeli omlet (3 yumurta) · 60 g lor · salata · 1 dilim ekmek"],["🐟","Buğulama balık (180 g) · sebze · 3 yk bulgur"],["🍢","Tavuk şiş (180 g) · közlenmiş sebze · cacık"],["🥩","Izgara biftek yağsız (130 g) · ızgara sebze · yeşil salata"],["🦃","Hindi köfte (160 g) · fırın sebze · 100 g yoğurt"],["🍲","Yayla çorbası (1 kase) · 160 g ızgara tavuk · salata"],["🥗","Ton balıklı salata (150 g ton · yeşillik · mısır · 1 yumurta) · 1 dilim ekmek"],["🍳","Menemen (3 yumurta) · 50 g beyaz peynir · 1 dilim ekmek · salata"]]
+];
+
+const RECIPES=[
+[["Yumurtaları tuz-karabiberle çırp.","Az yağda kısık ateşte pişir, ortası hafif akışkanken katla.","Ekmek, peynir ve sebzeyle servis et."],["Biber-domatesi zeytinyağında yumuşat.","Yumurtaları kırıp karıştırarak pişir.","Kaşar rendele, ekmekle ver."],["Yumurtayı 8-9 dk haşla.","Süzme peynir, ekmek, zeytin ve sebzeyi tabağa diz."],["Yulafı sütle 4-5 dk pişir.","Ilıyınca whey'i karıştır (kaynarken topaklanır).","Fıstık ezmesi gezdir."],["Yumurtaları az yağda pişir.","Hindi füme, peynir, ekmek ve sebzeyle tabak hazırla."],["Beyazlar + 1 tam yumurtayı omlet yap.","Lor, çavdar ekmeği ve cevizle ver."],["Yoğurda yulaf, ceviz ve tarçın ekle.","Yumurtayı haşlayıp yanında ver."],["Mantar-ıspanağı sote et.","Çırpılmış yumurtayı ekle, pişir.","Peynir ve ekmekle ver."],["Yumurtaları 8 dk haşla.","Lor, ekmek, domates ve zeytinle tabak hazırla."],["Yulaf, yumurta ve whey'i blenderdan geçir.","Tavada her yüzü 2-3 dk pişir.","Fıstık ezmesi sür."],["Peynir, ekmek, sebze ve zeytini tabağa diz."],["Sucuğu kızart, yumurtaları üzerine kır.","Pişirip ekmekle ver."],["Yumurtaları haşla.","Avokadoyu ezip ekmeğe sür.","Yumurta ve peyniri diz."],["Tavuğu ızgarala, dilimle.","Lavaşa labne, tavuk, marul-domates koy, sar."],["Cottage cheese'e yulaf, ceviz ve tarçın ekle."]],
+[["Tavuğu baharatla, her yüz 4-5 dk pişir.","Bulguru 1:2 su ile 12-15 dk demle.","Salatayla ver."],["Köfteyi ızgarala.","Esmer pirinci 25-30 dk haşla.","Cacık ve salatayla ver."],["Hindiyi ızgarala.","Patatesi 200°C 25-30 dk fırınla.","Salatayla ver."],["Makarnayı haşla.","Tonu sebze ve zeytinyağıyla karıştır.","Makarnayla harmanla."],["Somonu her yüz 3-4 dk pişir.","Kinoayı 1:2 su ile 15 dk pişir.","Buhar sebzeyle ver."],["Nohutu soğan-salça ile pişir.","Izgara tavuğu ekle.","Pirinç-cacıkla ver."],["Tavuğu küp doğrayıp sote et.","Esmer pirinç ve sebzeyle kâseye diz."],["Levreği 15-18 dk pişir.","Patatesi haşla.","Salatayla ver."],["Bifteği her yüz 2-3 dk mühürle, dinlendir.","Bulgur demle, sebze közle."],["Butları 200°C 30-35 dk fırınla.","Bulgur-salatayla ver."],["Hindi köfteyi yoğurup pişir.","Pirinç-cacıkla ver."],["Çuprayı 15 dk pişir.","Kinoa ve sebzeyle ver."],["Fasulyeyi soğan-salça ile pişir.","Tavuk, pirinç ve turşuyla ver."],["Makarnayı haşla.","Tavuğu sote et, domates sos ekle.","Karıştır."],["Tavuğu ızgarala.","Lavaşa marul-domates-cacık-tavuk koy, sar."],["Tavuğu ızgarala, dilimle.","Yeşillik-bulgurla karıştır, nar ekşisi gezdir."],["Karidesi sarımsakla 3-4 dk sote et.","Pirinç-sebzeyle ver."],["Rostoyu ısıt, dilimle.","Patates-salatayla ver."],["Somonu 200°C 12-15 dk fırınla.","Bulgur-brokoliyle ver."],["Tavuğu marine et, şişle ızgarala.","Sebze, lavaş, cacıkla ver."],["Köfteyi ızgarala.","Çorbayı ısıt.","Ekmek-salatayla ver."],["Tavuğu sebzeyle sote et.","Bulgur-yoğurtla ver."],["Hindiyi galeta ununa bula.","200°C 20 dk fırınla.","Patates-salatayla ver."],["Kinoayı haşla, soğut.","Ton-sebze-zeytinyağıyla karıştır."],["Antrikotu mühürle, dinlendir.","Pirinç-sebzeyle ver."]],
+[["Yoğurda muz ve badem ekle."],["Süzme peynir, elma ve cevizi tabağa al."],["Ekmeğe fıstık ezmesi sür, muz dilimle.","Sütle ye."],["Yulafı yoğurt-sütle karıştır, gece beklet.","Sabah muz ekle."],["Whey, süt, muz ve fıstık ezmesini blenderdan geçir."],["Barı elma ve bademle ye."],["Yoğurda granola ve yaban mersini ekle."],["Yoğurt, süt, muz ve yulafı blenderdan geçir."],["Simite süzme peynir sür.","Portakalla ye."],["Yoğurda fıstık ezmesi-tarçın ekle.","Elmayla ye."],["Cottage cheese'e muz ve bal ekle."],["Kefire granola ve yaban mersini koy."],["Ekmeğe peynir koy, elmayla ye."],["Yulafı sütle 4-5 dk pişir.","Muz-tarçın-balla tatlandır."],["Yoğurda armut, badem ve tarçın ekle."]],
+[["Köfteyi ızgarala.","Patatesi fırınla.","Yoğurtla ver."],["Levreği pişir, sebzeyi fırınla.","Yoğurt-salatayla ver."],["Tavuğu 200°C 25-30 dk fırınla.","Sebze sote ve bulgurla ver."],["Hindiyi şişle ızgarala.","Sebze ve bulgurla ver."],["Tavuğu sote et, çorbayı ısıt.","Ekmekle ver."],["Kıymayı soğanla kavur, sebze ekle.","Pirinç-cacıkla ver."],["Tavuğu ızgarala.","Yeşillik-yumurta-mısırla karıştır, ekmekle ver."],["Somonu 200°C 12-15 dk fırınla.","Sebze-bulgurla ver."],["Tavuğu ve sebzeyi ızgarala.","Yoğurtla ver."],["Köfteyi ızgarala, patlıcan-biber közle.","Cacıkla ver."],["Eti mühürle, sebze-su ekle, pişir.","Pirinçle ver."],["Çuprayı pişir.","Salata-ekmekle ver."],["Hindiyi sebzeyle sote et.","Bulgur-yoğurtla ver."],["Tavuk-sebzeyi fırın kabına koy, 200°C 30 dk.","Pirinçle ver."],["Eti soğan-domatesle suyunu çekene dek pişir.","Ekmek-cacıkla ver."],["Karidesi sarımsakla sote et.","Sebze-salatayla ver."],["Çorbayı ısıt.","Izgara tavuk-salatayla ver."],["Sebzeyi sote et, yumurta ekle.","Lor-ekmek-salatayla ver."],["Balığı sebze-su-limonla 15 dk buğula.","Bulgurla ver."],["Tavuğu şişle ızgarala.","Sebze-cacıkla ver."],["Bifteği mühürle, dinlendir.","Sebze-salatayla ver."],["Hindi köfteyi pişir.","Sebze-yoğurtla ver."],["Yayla çorbasını hazırla.","Izgara tavuk-salatayla ver."],["Tonu süz, yeşillik-mısır-yumurtayla karıştır.","Ekmekle ver."],["Biber-domatesi yumuşat, yumurta ekle.","Peynir-ekmek-salatayla ver."]]
+];
+
+const DEFAULT_PICKS={"Pazartesi":[0,0,0,0],"Salı":[3,4,1,1],"Çarşamba":[1,1,2,2],"Perşembe":[4,2,3,3],"Cuma":[2,3,4,4],"Cumartesi":[5,5,5,5],"Pazar":[6,0,6,6]};
+
+let sb=null, user=null, profile=null;
+let state={checks:{},picks:{}};
+let current=(new Date().getDay()+6)%7;
+const todayIdx=current;
+
+function $(id){return document.getElementById(id);}
+function show(id){["configWarn","authScreen","onboardScreen","appScreen"].forEach(s=>$(s).classList.add('hidden'));$(id).classList.remove('hidden');}
+
+function slotMacro(j){
+  if(!profile) return [REF.kcal[j],REF.p[j],REF.c[j],REF.f[j]];
+  return [
+    Math.round(REF.kcal[j]*profile.kcal/REF_TOT.kcal),
+    Math.round(REF.p[j]*profile.protein/REF_TOT.p),
+    Math.round(REF.c[j]*profile.carb/REF_TOT.c),
+    Math.round(REF.f[j]*profile.fat/REF_TOT.f)
+  ];
+}
+function computeTargets(sex,age,h,w,activity,goal){
+  let bmr=10*w+6.25*h-5*age+(sex==='erkek'?5:-161);
+  const mult={hareketsiz:1.2,hafif:1.375,orta:1.55,cok:1.725}[activity];
+  let tdee=bmr*mult;
+  let kcal=goal==='ver'?tdee-500:(goal==='al'?tdee+300:tdee);
+  kcal=Math.max(kcal,bmr*0.95);
+  kcal=Math.max(kcal,sex==='kadin'?1200:1500);
+  kcal=Math.round(kcal/5)*5;
+  let protein=Math.round(1.8*w);
+  let fat=Math.round(kcal*0.28/9);
+  let carb=Math.round((kcal-protein*4-fat*9)/4);
+  if(carb<60)carb=60;
+  return {kcal,protein,carb,fat};
+}
+
+/* ---------- AUTH ---------- */
+let signupMode=false;
+function refreshAuthUI(){
+  $('authTitle').textContent=signupMode?'Kayıt Ol':'Giriş Yap';
+  $('authH').textContent=signupMode?'Aileye katıl':'Tekrar hoş geldin';
+  $('authLead').textContent=signupMode?'E-posta ve şifreyle yeni hesap oluştur.':'Hesabınla giriş yap, takibin bulutta seni bekliyor.';
+  $('authBtn').textContent=signupMode?'Kayıt Ol':'Giriş Yap';
+  $('nameWrap').classList.toggle('hidden',!signupMode);
+  $('authSwitch').innerHTML=signupMode?'Zaten hesabın var mı? <a id="toLogin">Giriş yap</a>':'Hesabın yok mu? <a id="toSignup">Kayıt ol</a>';
+  const t=$('toSignup');if(t)t.onclick=()=>{signupMode=true;refreshAuthUI();};
+  const l=$('toLogin');if(l)l.onclick=()=>{signupMode=false;refreshAuthUI();};
+}
+$('authBtn').onclick=async()=>{
+  const email=$('authEmail').value.trim(), pass=$('authPass').value, name=$('authName').value.trim();
+  const msg=$('authMsg');msg.className='msg';msg.textContent='İşleniyor...';
+  try{
+    if(signupMode){
+      const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
+      if(error)throw error;
+      if(!data.session){msg.className='msg ok';msg.textContent='Kayıt alındı. E-posta onayı açıksa gelen kutunu kontrol et, sonra giriş yap.';return;}
+    } else {
+      const {error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+    }
+  }catch(e){msg.className='msg err';msg.textContent='Hata: '+(e.message||e);}
+};
+
+/* ---------- PROFILE ONBOARDING ---------- */
+let obSex='erkek', obGoal='ver';
+function segInit(){
+  document.querySelectorAll('#obSex button').forEach(b=>b.onclick=()=>{obSex=b.dataset.v;document.querySelectorAll('#obSex button').forEach(x=>x.classList.toggle('on',x===b));});
+  document.querySelectorAll('#obGoal button').forEach(b=>b.onclick=()=>{obGoal=b.dataset.v;document.querySelectorAll('#obGoal button').forEach(x=>x.classList.toggle('on',x===b));});
+  document.querySelector('#obSex button[data-v="erkek"]').classList.add('on');
+  document.querySelector('#obGoal button[data-v="ver"]').classList.add('on');
+}
+$('obBtn').onclick=async()=>{
+  const name=$('obName').value.trim(), age=+$('obAge').value, h=+$('obHeight').value, w=+$('obWeight').value, act=$('obActivity').value;
+  const msg=$('obMsg');msg.className='msg';
+  if(!name||!age||!h||!w){msg.className='msg err';msg.textContent='Lütfen tüm alanları doldur.';return;}
+  const t=computeTargets(obSex,age,h,w,act,obGoal);
+  const row={id:user.id,name,sex:obSex,age,height:h,weight:w,activity:act,goal:obGoal,kcal:t.kcal,protein:t.protein,carb:t.carb,fat:t.fat};
+  msg.textContent='Kaydediliyor...';
+  const {error}=await sb.from('profiles').upsert(row);
+  if(error){msg.className='msg err';msg.textContent='Hata: '+error.message;return;}
+  profile=row;await loadTracking();showApp();
+};
+
+/* ---------- TRACKING (bulut) ---------- */
+async function loadTracking(){
+  state={checks:{},picks:{}};
+  DAY_NAMES.forEach(d=>{state.checks[d]=[false,false,false,false];state.picks[d]=DEFAULT_PICKS[d].slice();});
+  const {data,error}=await sb.from('tracking').select('*').eq('user_id',user.id);
+  if(!error&&data){data.forEach(r=>{if(state.picks[r.day]){state.picks[r.day][r.slot]=r.pick;state.checks[r.day][r.slot]=r.checked;}});}
+}
+async function saveCell(day,slot){
+  const row={user_id:user.id,day,slot,pick:state.picks[day][slot],checked:state.checks[day][slot]};
+  await sb.from('tracking').upsert(row,{onConflict:'user_id,day,slot'});
+}
+
+/* ---------- RENDER ---------- */
+function dayDone(name){return state.checks[name].filter(Boolean).length;}
+function renderTabs(){const el=$('tabs');el.innerHTML='';DAY_NAMES.forEach((name,i)=>{const done=dayDone(name);const t=document.createElement('div');t.className='tab'+(i===current?' active':'')+(i===todayIdx?' today':'')+(done===4?' full':'');t.innerHTML='<div class="d">'+name.slice(0,3)+'</div><div class="frac">'+(done===4?'✓':done+'/4')+'</div>';t.onclick=()=>{current=i;render();};el.appendChild(t);});}
+function renderMeals(){
+  const name=DAY_NAMES[current];
+  $('dayName').textContent=name+(current===todayIdx?' (Bugün)':'');
+  $('dayCount').textContent=dayDone(name)+'/4 öğün';
+  const el=$('meals');el.innerHTML='';
+  for(let j=0;j<4;j++){
+    const item=ALT[j][state.picks[name][j]]||ALT[j][0];
+    const mc=slotMacro(j);const isDone=state.checks[name][j];
+    const card=document.createElement('div');card.className='meal'+(isDone?' done':'');
+    card.innerHTML='<div class="icon">'+item[0]+'<span class="rb">📖</span></div><div class="meal-body"><div class="meal-head"><span class="meal-slot">'+SLOTS[j]+'</span><span class="meal-time">'+TIMES[j]+'</span></div><div class="meal-food">'+item[1]+'</div><div class="row2"><div class="macros"><span class="m k">'+mc[0]+' kcal</span><span class="m p">P '+mc[1]+'</span><span class="m c">K '+mc[2]+'</span><span class="m f">Y '+mc[3]+'</span></div><button class="swap">⇄ Değiştir</button></div></div><div class="check">'+(isDone?'✓':'')+'</div>';
+    card.querySelector('.icon').addEventListener('click',e=>{e.stopPropagation();openRecipe(j);});
+    card.querySelector('.swap').addEventListener('click',e=>{e.stopPropagation();openSheet(j);});
+    card.addEventListener('click',()=>{state.checks[name][j]=!state.checks[name][j];saveCell(name,j);render();if(state.checks[name][j]&&dayDone(name)===4)celebrate();});
+    el.appendChild(card);
+  }
+}
+function renderProgress(){
+  const name=DAY_NAMES[current];const done=dayDone(name);const pct=Math.round(done/4*100);const circ=2*Math.PI*36;
+  $('ring').setAttribute('stroke-dasharray',circ);$('ring').setAttribute('stroke-dashoffset',circ*(1-done/4));
+  $('ringPct').textContent=pct+'%';$('ringFrac').textContent=done+'/4';$('barFill').style.width=pct+'%';
+  let tk=0,tp=0,tc=0,tf=0;for(let j=0;j<4;j++){const m=slotMacro(j);tk+=m[0];tp+=m[1];tc+=m[2];tf+=m[3];}
+  $('dayTarget').innerHTML='<span class="m k">~'+tk+' kcal</span><span class="m p">P '+tp+'</span><span class="m c">K '+tc+'</span><span class="m f">Y '+tf+'</span>';
+  let big,small;
+  if(done===0){big="Hadi başlayalım 💪";small="Her işaret, hedefe bir adım.";}
+  else if(done===1){big="Güzel başlangıç!";small="İlk öğün tamam, devam.";}
+  else if(done===2){big="Yarı yoldasın 🔥";small="Ritmi yakaladın.";}
+  else if(done===3){big="Az kaldı!";small="Bir öğün daha.";}
+  else{big="Günü tamamladın! 🎉";small="Harikasın.";}
+  $('msgBig').textContent=big;$('msgSmall').textContent=small;
+}
+function render(){renderTabs();renderMeals();renderProgress();}
+
+/* ---------- SHEETS ---------- */
+const overlay=$('overlay'),sheet=$('sheet'),rsheet=$('rsheet');
+function openSheet(slot){
+  const name=DAY_NAMES[current];const m=slotMacro(slot);
+  $('shTitle').textContent=SLOTS[slot]+' — Değiştir';
+  $('shSub').textContent=ALT[slot].length+' seçenek · hepsi ~'+m[0]+' kcal · P '+m[1]+' · K '+m[2]+' · Y '+m[3];
+  const box=$('shOpts');box.innerHTML='';
+  ALT[slot].forEach((opt,i)=>{const sel=state.picks[name][slot]===i;const row=document.createElement('div');row.className='opt'+(sel?' sel':'');row.innerHTML='<div class="oi">'+opt[0]+'</div><div class="of">'+opt[1]+'</div><div class="ock"></div>';row.onclick=()=>{const prev=state.picks[name][slot];state.picks[name][slot]=i;if(prev!==i)state.checks[name][slot]=false;saveCell(name,slot);closeSheet();render();};box.appendChild(row);});
+  rsheet.classList.remove('show');overlay.classList.add('show');sheet.classList.add('show');sheet.scrollTop=0;
+}
+function openRecipe(slot){
+  const name=DAY_NAMES[current];const pick=state.picks[name][slot];const item=ALT[slot][pick]||ALT[slot][0];const steps=RECIPES[slot][pick]||[];const mc=slotMacro(slot);
+  $('rEmoji').textContent=item[0];$('rTitle').textContent=SLOTS[slot]+' · '+TIMES[slot];
+  $('rMacro').innerHTML='<span class="m k">'+mc[0]+' kcal</span><span class="m p">P '+mc[1]+'</span><span class="m c">K '+mc[2]+'</span><span class="m f">Y '+mc[3]+'</span>';
+  $('rIng').textContent=item[1];const ol=$('rSteps');ol.innerHTML='';steps.forEach(s=>{const li=document.createElement('li');li.textContent=s;ol.appendChild(li);});
+  sheet.classList.remove('show');overlay.classList.add('show');rsheet.classList.add('show');rsheet.scrollTop=0;
+}
+function closeSheet(){overlay.classList.remove('show');sheet.classList.remove('show');rsheet.classList.remove('show');}
+overlay.onclick=closeSheet;
+
+$('resetDay').onclick=async()=>{const d=DAY_NAMES[current];for(let j=0;j<4;j++){state.checks[d][j]=false;saveCell(d,j);}render();};
+$('resetWeek').onclick=async()=>{if(confirm("Tüm haftanın işaretleri sıfırlansın mı?")){for(const d of DAY_NAMES){for(let j=0;j<4;j++){state.checks[d][j]=false;saveCell(d,j);}}render();}};
+$('logout').onclick=async()=>{await sb.auth.signOut();location.reload();};
+
+const cv=$('confetti'),ctx=cv.getContext('2d');
+function celebrate(){cv.width=innerWidth;cv.height=innerHeight;const colors=['#2f7d4f','#cf9a3e','#b5532f','#6e8259','#2e9e5b'];let parts=[];for(let i=0;i<90;i++)parts.push({x:innerWidth/2,y:innerHeight*0.3,vx:(Math.random()-.5)*11,vy:Math.random()*-12-3,c:colors[i%colors.length],s:Math.random()*7+4,r:Math.random()*6,vr:(Math.random()-.5)*.4});let t=0;(function a(){ctx.clearRect(0,0,cv.width,cv.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.4;p.r+=p.vr;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx.restore();});t++;if(t<110)requestAnimationFrame(a);else ctx.clearRect(0,0,cv.width,cv.height);})();}
+
+function showApp(){
+  $('who').innerHTML=(profile.name||'Profil')+' <span>· '+profile.kcal+' kcal hedef</span>';
+  show('appScreen');render();
+}
+
+/* ---------- BOOT ---------- */
+async function boot(){
+  if(SUPABASE_URL.indexOf('YOUR-')>=0||SUPABASE_ANON_KEY.indexOf('YOUR-')>=0){show('configWarn');return;}
+  sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  refreshAuthUI();segInit();
+  const {data:{session}}=await sb.auth.getSession();
+  await handleSession(session);
+  sb.auth.onAuthStateChange((_e,s)=>{handleSession(s);});
+}
+async function handleSession(session){
+  if(!session){user=null;profile=null;show('authScreen');return;}
+  user=session.user;
+  const {data}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+  if(!data){profile=null;$('obName').value=(user.user_metadata&&user.user_metadata.name)||'';show('onboardScreen');return;}
+  profile=data;await loadTracking();showApp();
+}
+boot();
+</script>
+</body>
+</html>
